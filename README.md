@@ -1,4 +1,4 @@
-# ML MAP Layers for Probabilistic
+# ML and MAP Layers for Probabilistic
 In the current state of the art, SoftMax output classification networks are usually implemented for perception systems and applied in autonomous navigation, including mobile robotics and autonomous vehicles. However, the nature of
 SoftMax classification often produces overconfident predictions rather than proper probabilistic interpretation, which can thus hinder the ability of the classification network. In this work, we
 propose a probabilistic approach to Convolutional Neural Networks which is calculated via the distributions in the network’s Logit layer. We demonstrate that Maximum Likelihood (ML)
