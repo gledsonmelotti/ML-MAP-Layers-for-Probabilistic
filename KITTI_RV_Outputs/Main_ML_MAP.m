@@ -3,7 +3,7 @@ clear;
 close all
 clc
 
-diretorio_probability = 'C:\Users\User\Desktop\CódigosMAP_ML\KITTI\RGB\';
+diretorio_probability = 'C:\Users\User\Desktop\CódigosMAP_ML\KITTI\RV_13_13\';
 load([diretorio_probability,'Probability_logits_Train.mat']);
 load([diretorio_probability,'Train_labels.mat']);
 load([diretorio_probability,'Probability_logits_test.mat']);
