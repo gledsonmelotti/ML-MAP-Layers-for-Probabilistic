@@ -6,3 +6,5 @@ and Maximum a-Posteriori (MAP) interpretations are stronger for classification t
 We explore the modalities of computer vision via an RGB camera and LiDAR (RV: range-view) modalities, where our approach shows promising performance compared to the usual SoftMax
 layer with the benefit of enabling interpretable probabilistic predictions. Another benefit to our proposed system is that the layers can be implemented as a replacement to SoftMax, that is,
 they can be used as classification output to pre trained networks.
+
+![alt text](http://url/to/img.png)
