@@ -1,0 +1,14 @@
+Train Dataset:
+Car: 208501
+Cyclist: 7199
+Pedestrian: 9031
+
+Test Dataset:
+Car: 193012
+Cyclist: 9238
+Pedestrian: 9199
+
+Validation Dataset:
+Car: 23167
+Cyclist: 800
+Pedestrian: 1003
