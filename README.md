@@ -7,4 +7,4 @@ We explore the modalities of computer vision via an RGB camera and LiDAR (RV: ra
 layer with the benefit of enabling interpretable probabilistic predictions. Another benefit to our proposed system is that the layers can be implemented as a replacement to SoftMax, that is,
 they can be used as classification output to pre trained networks.
 
-![alt text](http://url/to/img.png)
+![ML_MAP_Layers](https://github.com/gledsonmelotti/ML-MAP-Layers-for-Probabilistic/blob/master/Images/InceptionV3_Final.png)
