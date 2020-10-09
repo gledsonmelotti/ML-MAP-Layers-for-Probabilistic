@@ -10,7 +10,7 @@ img_path = "D:/KITTI_DATASET/training/image_2/";
 
 %% Reading Labels from tx
 bounding_box = [];
-indice_folder = 1; % frame-KITTI
+indice_folder = 2222; % frame-KITTI
 fileID = fopen(sprintf('%s/%06d.txt',label_path,indice_folder),'r'); % open txt
 Label = textscan(fileID,'%s %f %d %f %f %f %f %f %f %f %f %f %f %f %f','delimiter', ' '); % read the file in matrix format
 fclose(fileID);
@@ -72,9 +72,9 @@ if ~isempty(bounding_box)
     rect = calib{5,1};
     posicao = find(calib{5,1} == ':')+2;
     rect = rect(1,posicao:length(rect));
-    Rect = reshape(str2num(rect),[3,3])';
-    Rect(:,4) = 0;
-    Rect(4,:) = [0 0 0 1];
+    R0_rect = reshape(str2num(rect),[3,3])';
+    R0_rect(:,4) = 0;
+    R0_rect(4,:) = [0 0 0 1];
     %% Tr_velo_to_cam
     velo_to_cam = calib{6,1};
     posicao = find(calib{6,1} == ':')+2;
@@ -89,7 +89,7 @@ if ~isempty(bounding_box)
     Tr_imu_to_cam(4,:) = [0 0 0 1];
 end
 
-% loading velodyne points
+%% loading velodyne points
 fd = fopen(sprintf('%s/%06d.bin',pcd_path,indice_folder),'rb');
 if fd > 1
     velo = fread(fd,[4 inf],'single')'; % 3D point clouds x, y, z and reflectance
@@ -103,8 +103,31 @@ ymax=max((velo(:,2)));
 zmin=min((velo(:,3)));
 zmax=max((velo(:,3)));
 player = pcplayer([xmin,xmax], [ymin,ymax], [zmin,zmax]);
-figure(1)
 view(player, velo(:,1:3))
+
+% Filter camera angles for KITTI dataset
+idx = (velo(:,2)<(velo(:,1)-0.27) & -velo(:,2)<(velo(:,1)-0.27));
+velo_point = velo(idx,:);
+xmin=min((velo_point(:,1)));
+xmax=max((velo_point(:,1)));
+ymin=min((velo_point(:,2)));
+ymax=max((velo_point(:,2)));
+zmin=min((velo_point(:,3)));
+zmax=max((velo_point(:,3)));
+player = pcplayer([xmin,xmax], [ymin,ymax], [zmin,zmax]);
+view(player, velo_point(:,1:3))
+
+% Defining which points belong to the image plane. (approximation)
+idx = velo_point(:,1)<5;
+velo_point(idx,:) = [];
+xmin=min((velo_point(:,1)));
+xmax=max((velo_point(:,1)));
+ymin=min((velo_point(:,2)));
+ymax=max((velo_point(:,2)));
+zmin=min((velo_point(:,3)));
+zmax=max((velo_point(:,3)));
+player = pcplayer([xmin,xmax], [ymin,ymax], [zmin,zmax]);
+view(player, velo_point(:,1:3))
 
 % Defining which points belong to the image plane. (approximation)
 idx = velo(:,1)<5;
@@ -117,11 +140,10 @@ ymax=max((velo(:,2)));
 zmin=min((velo(:,3)));
 zmax=max((velo(:,3)));
 player = pcplayer([xmin,xmax], [ymin,ymax], [zmin,zmax]);
-figure(2)
 view(player, velo(:,1:3))
 
 % projecting to 2D image plane
-px = (P2 * Rect * Tr_velo_to_cam * velo')';
+px = (P2 * R0_rect * Tr_velo_to_cam * velo')';
 px(:,1) = px(:,1)./px(:,3);
 px(:,2) = px(:,2)./px(:,3);
 
@@ -136,8 +158,80 @@ for c=1:size(px,1)
     else
         color = cols(col_idx,:);
     end
-    
     plot(px(c,1),px(c,2),'o','LineWidth',4,'MarkerSize',1,'Color',color);
 end
 
+%% Bounding Boxes
 
+% Projection matrix to 3D axis for 3D Label
+velo_to_cam = calib{6,1};
+posicao_ = find(calib{6,1} == ':')+2;
+velo_to_cam_ = velo_to_cam(1,posicao:length(velo_to_cam));
+velo_cam = reshape(str2num(velo_to_cam_),[4,3]);
+velo_cam_ = (velo_cam(1:3,1:3));
+
+rect = calib{5,1};
+posicao = find(calib{5,1} == ':')+2;
+rect_ = rect(1,posicao:length(rect));
+Rect_ = reshape(str2num(rect_),[3,3]);
+
+proj_velo=(velo_cam_*Rect_)';
+for pl=1:size(places,1)
+places(pl,:) = places(pl,:)*proj_velo;
+end
+
+% Every 0.27m from the center of the object, the original label undergoes a change.
+places(:,1) = places(:,1)+0.27;
+
+corner_=[];
+corners=[];
+% Compute the corners
+for cor=1:size(places,1)
+    x = places(cor,1);
+    y = places(cor,2);
+    z = places(cor,3);
+    h = size_(cor,1);
+    w = size_(cor,2);
+    l = size_(cor,3);
+    rotate = rotates(cor,1);
+    if l <= 10
+        corner = [x - l / 2., y - w / 2., z;
+            x + l / 2., y - w / 2., z;
+            x - l / 2., y + w / 2., z;
+            x - l / 2., y - w / 2., z + h;
+            x - l / 2., y + w / 2., z + h;
+            x + l / 2., y + w / 2., z;
+            x + l / 2., y - w / 2., z + h;
+            x + l / 2., y + w / 2., z + h];
+        corner = corner - [x, y, z];
+        rotate_matrix = [
+            cos(rotate()), -sin(rotate), 0;
+            sin(rotate), cos(rotate),  0;
+            0             , 0,               1];
+        % corner_ is 8x3
+        corner_ = corner*(rotate_matrix)';
+        corner_ = corner_+[x,y,z];
+        corner_ =reshape(corner_,[1,size(corner_,1)*size(corner_,2)]);
+        corners = [corners;corner_];
+    else
+        corners = [corners;corner_];
+    end
+end
+
+% Project the 3D box points into the image plane
+Corne3DFrame=[];
+for cor=1:size(corners,1)
+    point_ = corners(cor,:);
+    point_ = reshape(point_,[8,3]);
+    corner3D = []
+    for pt=1:size(point_,1)
+        point3D_to_2Dplane = [];
+        point3D_to_2Dplane = point_(pt,:);
+        point3D_to_2Dplane = [point3D_to_2Dplane 1];
+        point3D_corner_2Dplane = (P2 * R0_rect * Tr_velo_to_cam *point3D_to_2Dplane')';
+        point3D_corner_2Dplane = point3D_corner_2Dplane./point3D_corner_2Dplane(3);
+        corner3D = [corner3D;point3D_corner_2Dplane];
+    end
+    corner3D(:,4)=[];
+    Corne3DFrame=[Corne3DFrame;reshape(corner3D,[1,size(corner_,1)*size(corner_,2)])];
+end
