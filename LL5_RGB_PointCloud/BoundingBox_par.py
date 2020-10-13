@@ -1,9 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Thu Oct 10 09:22:26 2019
-
-@author: Gledson
-"""
 
 import os
 import gc
@@ -69,7 +63,7 @@ def post_process_coords(corner_coords, w, h):
     else:
         return []
 
-def gledson_render_annotation(my_annotation_token, w, h, view = np.eye(4),box_vis_level=box_vis_level):
+def LL5_render_annotation(my_annotation_token, w, h, view = np.eye(4),box_vis_level=box_vis_level):
     ann_token=my_annotation_token
     w=w
     h=h
@@ -191,15 +185,15 @@ for jj in range(len(total_scene)):
     for v in range(len(first_next_last_token)):
         sensor_channel = 'CAM_FRONT'
         my_sample_gledson = lyftd.get('sample', first_next_last_token[v])
-        my_sample_gledson_data = lyftd.get('sample_data', my_sample_gledson['data'][sensor_channel])
-        w=my_sample_gledson_data['width']
-        h=my_sample_gledson_data['height']
+        my_sample_LL5_data = lyftd.get('sample_data', my_sample_gledson['data'][sensor_channel])
+        w=my_sample_LL5_data['width']
+        h=my_sample_LL5_data['height']
         for k in range(len(my_sample_gledson['anns'])):
             #print('anns:', k) # Cena, amostra da cena e dados da cena
             print(str(j)+'_'+str(v)+'_'+str(k))
             my_annotation_token = my_sample_gledson['anns'][k]
             box_vis_level: BoxVisibility = BoxVisibility.ALL
-            data_path_cam, camera, corners_camera3D, corners_camera2D, data_path_lidar, corners_lidar, pointclouds, categoria = gledson_render_annotation(my_annotation_token, w, h, view = np.eye(4), box_vis_level=box_vis_level)
+            data_path_cam, camera, corners_camera3D, corners_camera2D, data_path_lidar, corners_lidar, pointclouds, categoria = LL5_render_annotation(my_annotation_token, w, h, view = np.eye(4), box_vis_level=box_vis_level)
             if len(data_path_cam)!=0 and len(camera)!=0 and len(corners_camera3D)!=0 and len(corners_camera2D)!=0 and len(data_path_lidar)!=0 and len(corners_lidar)!=0 and len(pointclouds)!=0 and len(categoria)!=0:
                 if w==1920 and h==1080:
                     sio.savemat('D:/Dataset_LyftLevel5/1920_par/data_path_cam/'+str(j)+'_'+str(v)+'_'+str(k)+'.mat',{'data_path_cam':data_path_cam})

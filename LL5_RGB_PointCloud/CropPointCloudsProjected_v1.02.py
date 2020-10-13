@@ -148,7 +148,7 @@ train_objects.head()
 #
 #    return points
 
-def gledson_map_pointcloud_to_image(pointsensor_token, camera_token):
+def LL5_map_pointcloud_to_image(pointsensor_token, camera_token):
     """Given a point sensor (lidar/radar) token and camera sample_data token, load point-cloud and map it to
     the image plane.
 
@@ -253,7 +253,7 @@ for k in range(0,180):
             camera_channel = camera[cam]
             pointsensor_token = sample_record["data"][pointsensor_channel]
             camera_token = sample_record["data"][camera_channel]
-            points, coloring, image, nome_cam_final = gledson_map_pointcloud_to_image(pointsensor_token, camera_token)
+            points, coloring, image, nome_cam_final = LL5_map_pointcloud_to_image(pointsensor_token, camera_token)
             # Here we just grab the front camera and the point sensor.
     #        plt.figure(figsize=(9, 16))
     #        plt.imshow(im)
