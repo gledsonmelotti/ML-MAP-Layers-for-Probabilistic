@@ -1,0 +1,272 @@
+clear
+close all
+clc
+format long
+
+label = {'Car','Cyclist','Pedestrian'};
+
+%% Train
+diretorio = 'C:\Users\User\OneDrive\Área de Trabalho\Code\Logit_Data\Train';
+load([diretorio,'\Car_TP.mat'])
+load([diretorio,'\Cyc_TP.mat'])
+load([diretorio,'\Ped_TP.mat'])
+
+nbins = 22;
+parametro = 0.0055; %0.01; % Suavizar a curva
+%% Score antes da sigmoid com dados de treino
+classes_car = zeros(size(Car_TP_raw_sc,1),1);
+classes_cyc = ones(size(Cyc_TP_raw_sc,1),1);
+classes_ped = 2*ones(size(Ped_TP_raw_sc,1),1);
+classes_det = [classes_car;classes_cyc;classes_ped];
+
+raw_sc = [Car_TP_raw_sc;Cyc_TP_raw_sc;Ped_TP_raw_sc];
+score_antes_sigmoid = [raw_sc classes_det];
+
+c = unique(classes_det);
+nc = length(label); %3
+ctr1 = score_antes_sigmoid(:,4) == c(1); ctr2 = score_antes_sigmoid(:,4) == c(2); ctr3 = score_antes_sigmoid(:,4) == c(3);
+
+figure(1);
+set(gcf,'color','w');grid
+cla; grid; title('TP-Train'); hold on
+hc1 = histogram(score_antes_sigmoid(ctr1,1),nbins,'Normalization','probability'); %class=c1 / y=c1
+hc2 = histogram(score_antes_sigmoid(ctr2,2),nbins,'Normalization','probability'); %class=c1 / y=c2
+hc3 = histogram(score_antes_sigmoid(ctr3,3),nbins,'Normalization','probability'); %class=c1 / y=c3
+legend('Car','Cyc','Ped')
+grid
+
+Valores1 = hc1.Values;
+BinEdgesLow1 = hc1.BinEdges(1:nbins);
+BinEdgesHigh1 = hc1.BinEdges(2:nbins+1);
+
+Valores2 = hc2.Values;
+BinEdgesLow2 = hc2.BinEdges(1:nbins);
+BinEdgesHigh2 = hc2.BinEdges(2:nbins+1);
+
+Valores3 = hc3.Values;
+BinEdgesLow3 = hc3.BinEdges(1:nbins);
+BinEdgesHigh3 = hc3.BinEdges(2:nbins+1);
+
+Valores = [Valores1;Valores2;Valores3];
+BinEdgesLow = [BinEdgesLow1;BinEdgesLow2;BinEdgesLow3];
+BinEdgesHigh = [BinEdgesHigh1;BinEdgesHigh2;BinEdgesHigh3];
+
+%% Test
+dir_test = 'C:\Users\User\OneDrive\Área de Trabalho\Code\Logit_Data\Test';
+
+%% Classificação no Test: considerando os scores depois da sigmoide
+load([dir_test,'\Car_TP.mat'])
+load([dir_test,'\Cyc_TP.mat'])
+load([dir_test,'\Ped_TP.mat'])
+
+%% Test TP: Considerando os scores antes da sigmoide
+ClS_Test_TP = [Car_TP_raw_sc;Cyc_TP_raw_sc;Ped_TP_raw_sc];
+
+Y = ClS_Test_TP;
+n = size(Y,1);
+nc = length(label);
+P = zeros(n,nc);
+for k=1:n % numeros de objetos
+    for cla=1:nc % numero de classes
+        for i=1:size(Valores,2)
+            if (BinEdgesLow(cla,i) <= Y(k,cla)) && (Y(k,cla) < BinEdgesHigh(cla,i))
+                P(k,cla) = Valores(cla,i);
+                %P(k,cla) = sum( Valores(cla,1:i) ); % 'truque' estilo CDF
+            end
+        end
+    end
+end
+ML_TP = [];
+
+ObjnessCar_TP = Car_TP_ObjSc;
+ObjnessCyc_TP = Cyc_TP_ObjSc;
+ObjnessPed_TP = Ped_TP_ObjSc;
+
+ML_TP = P+parametro;
+ML_TP = ML_TP./sum(ML_TP,2);
+ML_TP(1:size(ObjnessCar_TP,1),1) = ML_TP(1:size(ObjnessCar_TP,1),1).*ObjnessCar_TP;
+ML_TP(size(ObjnessCar_TP,1)+1:size(ObjnessCar_TP,1)+size(ObjnessCyc_TP,1),2) = ML_TP(size(ObjnessCar_TP,1)+1:size(ObjnessCar_TP,1)+size(ObjnessCyc_TP,1),2).*ObjnessCyc_TP;
+ML_TP(size(ObjnessCar_TP,1)+size(ObjnessCyc_TP,1)+1:size(ObjnessCar_TP,1)+size(ObjnessCyc_TP,1)+size(ObjnessPed_TP,1),3) = ML_TP(size(ObjnessCar_TP,1)+size(ObjnessCyc_TP,1)+1:size(ObjnessCar_TP,1)+size(ObjnessCyc_TP,1)+size(ObjnessPed_TP,1),3).*ObjnessPed_TP;
+
+figure3 = figure('Color',[1 1 1]);
+subplot4 = subplot(1,3,1,'Parent',figure3);
+hold(subplot4,'on');
+% Create histogram
+histogram(ML_TP(1:size(ObjnessCar_TP,1),1),'Parent',subplot4,'Normalization','probability','NumBins',nbins);
+% Create title
+title({'ML-TP-Car'});
+box(subplot4,'on');
+grid(subplot4,'on');
+hold(subplot4,'off');
+
+% Create subplot
+subplot5 = subplot(1,3,2,'Parent',figure3);
+hold(subplot5,'on');
+% Create histogram
+histogram(ML_TP(size(ObjnessCar_TP,1)+1:size(ObjnessCar_TP,1)+size(ObjnessCyc_TP,1),2),'Parent',subplot5,'Normalization','probability','NumBins',nbins);
+% Create title
+title({'ML-TP-Cyc'});
+box(subplot5,'on');
+grid(subplot5,'on');
+hold(subplot5,'off');
+
+% Create subplot
+subplot6 = subplot(1,3,3,'Parent',figure3);
+hold(subplot6,'on');
+% Create histogram
+histogram(ML_TP(size(ObjnessCar_TP,1)+size(ObjnessCyc_TP,1)+1:size(ObjnessCar_TP,1)+size(ObjnessCyc_TP,1)+size(ObjnessPed_TP,1),3),'Parent',subplot6,'Normalization','probability','NumBins',nbins);
+% Create title
+title({'ML-TP-Ped'});
+box(subplot6,'on');
+grid(subplot6,'on');
+hold(subplot6,'off');
+
+%% Test FP
+load([dir_test,'\Car_FP.mat'])
+load([dir_test,'\Cyc_FP.mat'])
+load([dir_test,'\Ped_FP.mat'])
+
+ClS_Test_FP = [Car_FP_raw_sc;Cyc_FP_raw_sc;Ped_FP_raw_sc];
+
+Y = ClS_Test_FP;
+n = size(Y,1);
+nc = length(label);
+P = zeros(n,nc);
+for k=1:n % numeros de objetos
+    for clas=1:nc % numero de classes
+        for i=1:size(Valores,2)
+            if (BinEdgesLow(clas,i) <= Y(k,clas)) & (Y(k,clas) < BinEdgesHigh(clas,i))
+                P(k,clas) = Valores(clas,i);
+                %P(k,clas) = sum( Valores(clas,1:i) ); % 'truque' estilo CDF
+            end
+        end
+    end
+end
+ML_FP = [];
+
+ObjnessCar_FP = Car_FP_ObjSc;
+ObjnessCyc_FP = Cyc_FP_ObjSc;
+ObjnessPed_FP = Ped_FP_ObjSc;
+% Ped_1 = cell2mat(Ped_FP_test(1,6,1:size(Ped_FP_test,3)));
+% Ped_1 = reshape(Ped_1,[42,1]);
+% Ped_2 = cell2mat(Ped_FP_test(2,6,1:size(Ped_FP_test,3)));
+% Ped_2 = reshape(Ped_2,[42,1]);
+% ObjnessPed_FP = [Ped_1;Ped_2];
+
+ML_FP = P+parametro;
+ML_FP = ML_FP./sum(ML_FP,2);
+ML_FP(1:size(ObjnessCar_FP,1),1) = ML_FP(1:size(ObjnessCar_FP,1),1).*ObjnessCar_FP;
+ML_FP(size(ObjnessCar_FP,1)+1:size(ObjnessCar_FP,1)+size(ObjnessCyc_FP,1),2) = ML_FP(size(ObjnessCar_FP,1)+1:size(ObjnessCar_FP,1)+size(ObjnessCyc_FP,1),2).*ObjnessCyc_FP;
+ML_FP(size(ObjnessCar_FP,1)+size(ObjnessCyc_FP,1)+1:size(ObjnessCar_FP,1)+size(ObjnessCyc_FP,1)+size(ObjnessPed_FP,1),3) = ML_FP(size(ObjnessCar_FP,1)+size(ObjnessCyc_FP,1)+1:size(ObjnessCar_FP,1)+size(ObjnessCyc_FP,1)+size(ObjnessPed_FP,1),3).*ObjnessPed_FP;
+
+figure4 = figure('Color',[1 1 1]);
+% Create subplot
+subplot1 = subplot(2,3,1,'Parent',figure4);
+hold(subplot1,'on');
+% Create histogram
+histogram(Car_FP_bl_test,'Parent',subplot1,'Normalization','probability','NumBins',nbins);
+% Create title
+title({'SG-FP-Car'});
+box(subplot1,'on');
+grid(subplot1,'on');
+hold(subplot1,'off');
+
+% Create subplot
+subplot2 = subplot(2,3,2,'Parent',figure4);
+hold(subplot2,'on');
+% Create histogram
+histogram(Cyc_FP_bl_test,'Parent',subplot2,'Normalization','probability','NumBins',nbins);
+% Create title
+title({'SG-FP-Cyc'});
+box(subplot2,'on');
+grid(subplot2,'on');
+hold(subplot2,'off');
+
+% Create subplot
+subplot3 = subplot(2,3,3,'Parent',figure4);
+hold(subplot3,'on');
+% Create histogram
+histogram(Ped_FP_bl_test,'Parent',subplot3,'Normalization','probability','NumBins',nbins);
+% Create title
+title({'SG-FP-Ped'});
+box(subplot3,'on');
+grid(subplot3,'on');
+hold(subplot3,'off');
+
+subplot4 = subplot(2,3,4,'Parent',figure4);
+hold(subplot4,'on');
+% Create histogram
+histogram(ML_FP(1:size(ObjnessCar_FP,1),1),'Parent',subplot4,'Normalization','probability','NumBins',nbins);
+% Create title
+title({'ML-FP-Car'});
+box(subplot4,'on');
+grid(subplot4,'on');
+hold(subplot4,'off');
+
+% Create subplot
+subplot5 = subplot(2,3,5,'Parent',figure4);
+hold(subplot5,'on');
+% Create histogram
+histogram(ML_FP(size(ObjnessCar_FP,1)+1:size(ObjnessCar_FP,1)+size(ObjnessCyc_FP,1),2),'Parent',subplot5,'Normalization','probability','NumBins',nbins);
+% Create title
+title({'ML-FP-Cyc'});
+box(subplot5,'on');
+grid(subplot5,'on');
+hold(subplot5,'off');
+
+% Create subplot
+subplot6 = subplot(2,3,6,'Parent',figure4);
+hold(subplot6,'on');
+% Create histogram
+histogram(ML_FP(size(ObjnessCar_FP,1)+size(ObjnessCyc_FP,1)+1:size(ObjnessCar_FP,1)+size(ObjnessCyc_FP,1)+size(ObjnessPed_FP,1),3),'Parent',subplot6,'Normalization','probability','NumBins',nbins);
+% Create title
+title({'ML-FP-Ped'});
+box(subplot6,'on');
+grid(subplot6,'on');
+hold(subplot6,'off');
+
+Label_Car_True = ones(size(Score_Car_original_FP,1),1);
+Label_Cyc_True = 2*ones(size(Score_Cyc_original_FP,1),1);
+Label_Ped_True = 3*ones(size(Score_Ped_original_FP,1),1);
+Test_labels = [Label_Car_True;Label_Cyc_True;Label_Ped_True];
+[confidence_FP, ML_predict_FP] = max(ML_FP');
+confidence_FP = confidence_FP';
+Test_predict_FP = ML_predict_FP';
+
+result_test = dir('D:\YOLOV4\yolov4_rgb\prediction_kitti\TP_FP\direct_result_test');
+result_test = result_test(3:end,:);
+
+FP_name = [Car_FP_test{1,1};Car_FP_test{2,1};Cyc_FP_test{1,1};Cyc_FP_test{2,1};Ped_FP_test{1,1};Ped_FP_test{2,1}];
+FP_name = str2num(FP_name);
+
+FP_bb = [Car_FP_test{1,3};Car_FP_test{2,3};Cyc_FP_test{1,3};Cyc_FP_test{2,3};Ped_FP_test{1,3};Ped_FP_test{2,3}];
+FP_BonBox = [FP_bb(:,1) FP_bb(:,2) FP_bb(:,3)-FP_bb(:,1) FP_bb(:,4)-FP_bb(:,2)];
+
+for fr=1:size(result_test,1)
+    name = result_test(fr).name(1:6);
+    position = find(str2num(name)==FP_name);
+    result_ml_fp = [Test_predict_FP(position)-1 FP_BonBox(position,:) confidence_FP(position)];
+    local = ['D:\YOLOV4\yolov4_rgb\prediction_kitti/matlab_predict_eval_kitti_ml_original_fp','/',name,'.mat'];
+    save(local,'result_ml_fp');
+end
+
+nbins
+FP_RGB_BL_Car = histogram(Car_FP_bl_test,'Normalization','probability','NumBins',nbins);
+FP_RGB_BL_Car_Data = FP_RGB_BL_Car.Data;
+
+FP_RGB_BL_Cyc = histogram(Cyc_FP_bl_test,'Normalization','probability','NumBins',nbins);
+FP_RGB_BL_Cyc_Data = FP_RGB_BL_Cyc.Data;
+
+FP_RGB_BL_Ped = histogram(Ped_FP_bl_test,'Normalization','probability','NumBins',nbins);
+FP_RGB_BL_Ped_Data = FP_RGB_BL_Ped.Data;
+
+FP_RGB_ML_Car = histogram(ML_FP(1:size(ObjnessCar_FP,1),1),'Normalization','probability','NumBins',nbins);
+FP_RGB_ML_Car_Data = FP_RGB_ML_Car.Data;
+
+FP_RGB_ML_Cyc = histogram(ML_FP(size(ObjnessCar_FP,1)+1:size(ObjnessCar_FP,1)+size(ObjnessCyc_FP,1),2),'Normalization','probability','NumBins',nbins);
+FP_RGB_ML_Cyc_Data = FP_RGB_ML_Cyc.Data;
+
+FP_RGB_ML_Ped = histogram(ML_FP(size(ObjnessCar_FP,1)+size(ObjnessCyc_FP,1)+1:size(ObjnessCar_FP,1)+size(ObjnessCyc_FP,1)+size(ObjnessPed_FP,1),3),'Normalization','probability','NumBins',nbins);
+FP_RGB_ML_Ped_Data = FP_RGB_ML_Ped.Data;
+
+save('D:\PhD_Thesis_UC_Versão_Final\These_final\Codigos e Figuras\FP_RGB_RaV_ReV_Detection\FP_RGB_ml.mat','nbins','FP_RGB_BL_Car','FP_RGB_BL_Car_Data','FP_RGB_BL_Cyc','FP_RGB_BL_Cyc_Data','FP_RGB_BL_Ped','FP_RGB_BL_Ped_Data','FP_RGB_ML_Car','FP_RGB_ML_Car_Data','FP_RGB_ML_Cyc','FP_RGB_ML_Cyc_Data','FP_RGB_ML_Ped','FP_RGB_ML_Ped_Data')
