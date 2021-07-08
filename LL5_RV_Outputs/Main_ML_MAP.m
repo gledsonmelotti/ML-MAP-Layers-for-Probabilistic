@@ -3,13 +3,13 @@ clear;
 close all
 clc
 
-diretorio_probability = 'C:\Users\User\Desktop\CódigosMAP_ML\LL5\RV_23_23\';
-load([diretorio_probability,'Probability_logits_Train.mat']);
-load([diretorio_probability,'Train_labels.mat']);
-load([diretorio_probability,'Probability_logits_test.mat']);
-load([diretorio_probability,'Test_labels.mat']);
-load([diretorio_probability,'Test_predict.mat']);
-load([diretorio_probability,'Probability_test.mat']);
+dir_probability = '...\LL5\RV_23_23\';
+load([dir_probability,'Probability_logits_Train.mat']);
+load([dir_probability,'Train_labels.mat']);
+load([dir_probability,'Probability_logits_test.mat']);
+load([dir_probability,'Test_labels.mat']);
+load([dir_probability,'Test_predict.mat']);
+load([dir_probability,'Probability_test.mat']);
 
 c = unique(Train_labels);
 nc = length(c); %3
@@ -88,10 +88,10 @@ for k=1:n
 end
 
 %% ML
-parameter = 0.01; % Additive Smoothing
-P1_ML = parameter + P1;
-P2_ML = parameter + P2;
-P3_ML = parameter + P3;
+lambda = 0.01; % Additive Smoothing
+P1_ML = lambda + P1;
+P2_ML = lambda + P2;
+P3_ML = lambda + P3;
 N = P1_ML+P2_ML+P3_ML;
 ML = [P1_ML,P2_ML,P3_ML]./N;
 
@@ -103,11 +103,11 @@ prior1 = pdf(pdf1,Y(:,1));
 prior2 = pdf(pdf2,Y(:,2)); 
 prior3 = pdf(pdf3,Y(:,3));
 
-parameter = 0.01; % Additive Smoothing
+lambda = 0.01; % Additive Smoothing
 
-P1_MAP = parameter+(double(prior1).*P1); 
-P2_MAP = parameter+(double(prior2).*P2); 
-P3_MAP = parameter+(double(prior3).*P3);
+P1_MAP = lambda+(double(prior1).*P1); 
+P2_MAP = lambda+(double(prior2).*P2); 
+P3_MAP = lambda+(double(prior3).*P3);
 N = P1_MAP + P2_MAP + P3_MAP;
 MAP = [P1_MAP, P2_MAP, P3_MAP]./N;
 
@@ -288,11 +288,9 @@ text('Parent',axes1,'HorizontalAlignment','center','FontSize',14,...
 axes2 = axes('Position',[0.13, 0.11, 0.213405797101449, 0.815]);
 hold(axes2,'on');
 
-% Create histogram
 histogram(data1,'Parent',axes2,'Normalization','probability',...
     'NumBins',nbins);
 
-% Create histogram
 histogram(data2,'Parent',axes2,'Normalization','probability',...
     'NumBins',nbins);
 legend('Negatives','Positives')
@@ -305,11 +303,9 @@ hold(axes2,'off');
 axes3 = axes('Position',[0.38 0.11 0.213405797101449 0.815]);
 hold(axes3,'on');
 
-% Create histogram
 histogram(data3,'Parent',axes3,'Normalization','probability',...
     'NumBins',nbins);
 
-% Create histogram
 histogram(data4,'Parent',axes3,'Normalization','probability',...
     'NumBins',nbins);
 
@@ -322,11 +318,9 @@ hold(axes3,'off');
 axes4 = axes('Position',[0.63 0.11 0.213405797101449 0.815]);
 hold(axes4,'on');
 
-% Create histogram
 histogram(data5,'Parent',axes4,'Normalization','probability',...
     'NumBins',nbins);
 
-% Create histogram
 histogram(data6,'Parent',axes4,'Normalization','probability',...
     'NumBins',nbins);
 legend('Negatives','Positives')
